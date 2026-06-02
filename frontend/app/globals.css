@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #05070d;
+  color: #e8edf7;
+  font-family: Inter, system-ui, Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Escala la "cartelera" 1280x720 para encajar en cualquier ventana */
+.stage {
+  width: 1280px;
+  height: 720px;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: pulse-live 1s infinite;
+}
+
+.fade-swap {
+  animation: fadeIn 0.6s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,35 @@
+# Blueprint de Render para el backend (FastAPI).
+# Render lo detecta si subís este archivo al repo y usás "New > Blueprint".
+# La cartelera NO necesita base de datos ni Redis: corre con API-Football.
+services:
+  - type: web
+    name: cartelera-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # 🔑 Pegá tu API key Pro de API-Football en el panel de Render
+      - key: APIFOOTBALL_API_KEY
+        sync: false
+      # 🌐 URL pública de tu frontend en Vercel (para CORS). Ej:
+      #     https://cartelera.vercel.app   (se setea en el panel)
+      - key: API_CORS_ORIGINS
+        sync: false
+      - key: DATA_PROVIDER
+        value: apifootball
+      - key: APIFOOTBALL_LEAGUE_ID
+        value: "1"
+      - key: APIFOOTBALL_SEASON
+        value: "2026"
+      - key: APIFOOTBALL_FRIENDLIES_LEAGUE_ID
+        value: "10"
+      - key: APIFOOTBALL_INCLUDE_FRIENDLIES
+        value: "true"
+      - key: CARTELERA_SOURCE
+        value: auto
+      - key: DISPLAY_TIMEZONE
+        value: America/Argentina/Buenos_Aires
+      - key: AGENDA_MAX_MATCHES
+        value: "10"
