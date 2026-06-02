@@ -192,7 +192,7 @@ class APIFootballClient:
         return ids
 
     def _live_map(self) -> dict[int, dict]:
-        """Fixtures en vivo (todas las ligas) -> {id: fixture crudo}. Cache 10 s."""
+        """Fixtures en vivo (todas las ligas) -> {id: fixture crudo}. Cache 60 s."""
         def fetch() -> dict[int, dict]:
             try:
                 raw = self._get("fixtures", {"live": "all", "timezone": self.tz})
@@ -201,7 +201,7 @@ class APIFootballClient:
                 return {}
             return {fx["fixture"]["id"]: fx for fx in raw if fx.get("fixture")}
 
-        return self._cached("live", 10, fetch)
+        return self._cached("live", 60, fetch)
 
     def _overlay_live(self, matches: list[dict]) -> None:
         live = self._live_map()
@@ -261,7 +261,7 @@ class APIFootballClient:
 
     # ── Eventos: goleadores y expulsados ──────────────────────────────
     def _events(self, fixture_id: int, home_id, away_id, finished: bool) -> tuple[list, list]:
-        ttl = 600 if finished else 10
+        ttl = 600 if finished else 60
         key = f"ev-{fixture_id}"
 
         def fetch() -> tuple[list, list]:

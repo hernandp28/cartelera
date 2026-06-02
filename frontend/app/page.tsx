@@ -32,12 +32,18 @@ export default function Page() {
     }
   }, []);
 
-  // Carga al cambiar de fecha + auto-refresh cada 10s (marcadores en vivo)
+  // Polling adaptativo: 60s si hay partidos en vivo, 5 min si no hay ninguno.
+  // Ahorra requests a la API externa cuando no hay actividad.
+  const hasLive = data?.matches?.some(
+    (m: any) => m.status === "1H" || m.status === "HT" || m.status === "2H" || m.status === "ET" || m.status === "P"
+  ) ?? false;
+  const pollInterval = hasLive ? 60_000 : 300_000;
+
   useEffect(() => {
     load(date);
-    const id = setInterval(() => load(date), 10000);
+    const id = setInterval(() => load(date), pollInterval);
     return () => clearInterval(id);
-  }, [date, load]);
+  }, [date, load, pollInterval]);
 
   // Cambio de día automático: al pasar las 00:00 (hora Argentina), si el
   // usuario está viendo "hoy", la cartelera salta al nuevo día. Si está
@@ -94,17 +100,4 @@ export default function Page() {
                 <p className="text-muted text-sm">
                   Levantá el backend: <code>uvicorn app.main:app --reload</code>
                 </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <Agenda matches={data?.agenda ?? []} />
-              <GroupsCarousel groups={data?.groups ?? []} />
-              <JueganManana matches={data?.tomorrow ?? []} />
-            </>
-          )}
-        </div>
-      </div>
-    </main>
-  );
-}
+              <
