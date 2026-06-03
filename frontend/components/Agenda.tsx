@@ -10,7 +10,13 @@ function gridCols(n: number): number {
   return Math.ceil(n / 2); // 2 filas; 3..10 => 2..5 columnas
 }
 
-export default function Agenda({ matches }: { matches: Match[] }) {
+export default function Agenda({
+  matches,
+  onSelect,
+}: {
+  matches: Match[];
+  onSelect?: (m: Match) => void;
+}) {
   const cols = gridCols(matches.length);
   const rows = matches.length <= 2 ? 1 : 2;
 
@@ -38,7 +44,7 @@ export default function Agenda({ matches }: { matches: Match[] }) {
           }}
         >
           {matches.map((m) => (
-            <MatchCard key={m.id} m={m} />
+            <MatchCard key={m.id} m={m} onSelect={onSelect} />
           ))}
         </div>
       )}

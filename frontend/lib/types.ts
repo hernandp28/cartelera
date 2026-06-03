@@ -50,6 +50,25 @@ export interface UpcomingMatch {
   away: string;
 }
 
+export interface LineupPlayer {
+  name: string | null;
+  number: number | null;
+  pos: string | null;
+}
+
+export interface TeamLineup {
+  team: TeamRef;
+  coach: string | null;
+  formation: string | null;
+  startXI: LineupPlayer[];
+  substitutes: LineupPlayer[];
+}
+
+export interface LineupsResponse {
+  home: TeamLineup | null;
+  away: TeamLineup | null;
+}
+
 export interface CarteleraResponse {
   date: string;
   timezone: string;

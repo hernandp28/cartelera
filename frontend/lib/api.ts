@@ -1,10 +1,20 @@
-import type { CarteleraResponse } from "./types";
+import type { CarteleraResponse, LineupsResponse } from "./types";
 
 const BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export async function fetchCartelera(date: string): Promise<CarteleraResponse> {
   const res = await fetch(`${BASE}/api/cartelera?date=${date}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
+export async function fetchLineups(
+  fixtureId: string | number
+): Promise<LineupsResponse> {
+  const res = await fetch(`${BASE}/api/fixtures/${fixtureId}/lineups`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`API ${res.status}`);

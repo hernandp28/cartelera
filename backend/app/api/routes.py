@@ -9,7 +9,7 @@ from app.schemas.cartelera import CarteleraResponse
 from app.schemas.prediction import Prediction
 from app.seed import worldcup2026 as seed
 from app.services import alerts_service, news_service, prediction_service
-from app.services.cartelera_service import build_cartelera
+from app.services.cartelera_service import build_cartelera, get_lineups
 
 router = APIRouter()
 
@@ -51,6 +51,12 @@ def list_matches(
 @router.get("/matches/{match_id}", tags=["matches"])
 def get_match(match_id: str):
     return _find_match(match_id)
+
+
+@router.get("/fixtures/{fixture_id}/lineups", tags=["matches"])
+def fixture_lineups(fixture_id: str):
+    """Formación, DT, titulares y suplentes de ambos equipos."""
+    return get_lineups(fixture_id)
 
 
 # ─────────────────────────── Selecciones ───────────────────────────

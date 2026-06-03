@@ -314,6 +314,44 @@ class APIFootballClient:
             if reds:
                 m["red_cards"] = reds
 
+    # ── Alineaciones (formación, DT, titulares, suplentes) ───────────
+    def lineups(self, fixture_id: int) -> dict:
+        """Devuelve {'home': {...}, 'away': {...}} o None si no hay datos."""
+        _POS = {"G": "ARQ", "D": "DEF", "M": "MED", "F": "DEL"}
+
+        def player(p: dict) -> dict:
+            pl = p.get("player", {}) or {}
+            return {
+                "name": pl.get("name"),
+                "number": pl.get("number"),
+                "pos": _POS.get(pl.get("pos"), pl.get("pos")),
+            }
+
+        def team_block(t: dict) -> dict:
+            tm = t.get("team", {}) or {}
+            return {
+                "team": {
+                    "id": tm.get("id"),
+                    "name": es_name(tm.get("name")),
+                    "flag_url": flag_for(tm.get("name"), tm.get("logo")),
+                    "logo_url": tm.get("logo"),
+                },
+                "coach": (t.get("coach") or {}).get("name"),
+                "formation": t.get("formation"),
+                "startXI": [player(p) for p in (t.get("startXI") or [])],
+                "substitutes": [player(p) for p in (t.get("substitutes") or [])],
+            }
+
+        def fetch() -> dict:
+            raw = self._get("fixtures/lineups", {"fixture": fixture_id})
+            blocks = [team_block(t) for t in raw]
+            return {
+                "home": blocks[0] if len(blocks) > 0 else None,
+                "away": blocks[1] if len(blocks) > 1 else None,
+            }
+
+        return self._cached(f"lineup-{fixture_id}", 600, fetch)
+
     # ── Standings (grupos nativos) ────────────────────────────────────
     def group_tables(self) -> list[dict]:
         def fetch() -> list[dict]:

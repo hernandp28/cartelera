@@ -5,14 +5,16 @@ import Header from "@/components/Header";
 import Agenda from "@/components/Agenda";
 import GroupsCarousel from "@/components/GroupsCarousel";
 import JueganManana from "@/components/JueganManana";
+import LineupModal from "@/components/LineupModal";
 import { fetchCartelera, shiftDate, todayAR } from "@/lib/api";
-import type { CarteleraResponse } from "@/lib/types";
+import type { CarteleraResponse, MatchCard } from "@/lib/types";
 
 export default function Page() {
   const [date, setDate] = useState<string>(todayAR());
   const [data, setData] = useState<CarteleraResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
+  const [selected, setSelected] = useState<MatchCard | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Refs para el chequeo de medianoche sin recrear timers
@@ -32,12 +34,12 @@ export default function Page() {
     }
   }, []);
 
-  // Polling adaptativo: 60s si hay partidos en vivo, 5 min si no hay ninguno.
+  // Polling adaptativo: rápido si hay partidos en vivo, lento si no hay ninguno.
   // Ahorra requests a la API externa cuando no hay actividad.
-  const hasLive = data?.matches?.some(
-    (m: any) => m.status === "1H" || m.status === "HT" || m.status === "2H" || m.status === "ET" || m.status === "P"
-  ) ?? false;
-  const pollInterval = hasLive ? 60_000 : 300_000;
+  // (el backend ya normaliza los estados a "LIVE"/"HT")
+  const hasLive =
+    data?.agenda?.some((m) => m.status === "LIVE" || m.status === "HT") ?? false;
+  const pollInterval = hasLive ? 10_000 : 300_000;
 
   useEffect(() => {
     load(date);
@@ -100,4 +102,22 @@ export default function Page() {
                 <p className="text-muted text-sm">
                   Levantá el backend: <code>uvicorn app.main:app --reload</code>
                 </p>
-              <
+              </div>
+            </div>
+          ) : (
+            <>
+              <Agenda matches={data?.agenda ?? []} onSelect={setSelected} />
+              <GroupsCarousel groups={data?.groups ?? []} />
+              <JueganManana matches={data?.tomorrow ?? []} />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Modal de alineaciones (fuera del stage escalado, tamaño real) */}
+      {selected && (
+        <LineupModal match={selected} onClose={() => setSelected(null)} />
+      )}
+    </main>
+  );
+}

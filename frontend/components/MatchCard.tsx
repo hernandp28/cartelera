@@ -72,9 +72,16 @@ function TeamEvents({
   );
 }
 
-export default function MatchCard({ m }: { m: Match }) {
+export default function MatchCard({
+  m,
+  onSelect,
+}: {
+  m: Match;
+  onSelect?: (m: Match) => void;
+}) {
   const st = statusLabel(m);
   const started = !["NS"].includes(m.status);
+  const clickable = ["LIVE", "HT", "FT", "AET", "PEN"].includes(m.status) && !!onSelect;
   const score =
     m.home_score != null && m.away_score != null
       ? `${m.home_score} - ${m.away_score}`
@@ -85,7 +92,13 @@ export default function MatchCard({ m }: { m: Match }) {
       : null;
 
   return (
-    <div className="h-full min-h-0 rounded-lg bg-panel2 border border-line px-3 py-2 flex flex-col justify-center gap-1.5 overflow-hidden hover:border-brand/60 transition">
+    <div
+      onClick={clickable ? () => onSelect!(m) : undefined}
+      title={clickable ? "Ver alineaciones" : undefined}
+      className={`h-full min-h-0 rounded-lg bg-panel2 border border-line px-3 py-2 flex flex-col justify-center gap-1.5 overflow-hidden transition ${
+        clickable ? "cursor-pointer hover:border-brand hover:bg-panel2/80" : "hover:border-brand/60"
+      }`}
+    >
       {/* meta: competición + estado */}
       <div className="flex items-center justify-between text-[10px] text-muted">
         <span className="uppercase tracking-wide truncate">

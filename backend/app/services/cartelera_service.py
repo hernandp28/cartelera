@@ -142,6 +142,17 @@ def _team_tier(m: dict) -> int:
     return 3
 
 
+def get_lineups(fixture_id: str) -> dict:
+    """Alineaciones (formación, DT, titulares, suplentes) de un partido."""
+    if settings.data_provider == "apifootball":
+        from app.services.apifootball import apifootball
+        try:
+            return apifootball.lineups(int(fixture_id))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("lineups %s falló: %s", fixture_id, exc)
+    return {"home": None, "away": None}
+
+
 def build_cartelera(day: str) -> dict:
     agenda, source, is_demo = _resolve_source(day)
 
