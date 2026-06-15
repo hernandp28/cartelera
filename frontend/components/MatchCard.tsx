@@ -75,9 +75,11 @@ function TeamEvents({
 export default function MatchCard({
   m,
   onSelect,
+  justScored,
 }: {
   m: Match;
   onSelect?: (m: Match) => void;
+  justScored?: boolean;
 }) {
   const st = statusLabel(m);
   const started = !["NS"].includes(m.status);
@@ -128,7 +130,11 @@ export default function MatchCard({
 
         {/* Resultado (centro) */}
         <div className="text-center px-1">
-          <div className="text-2xl font-extrabold tabular-nums leading-none whitespace-nowrap">
+          <div
+            className={`text-2xl font-extrabold tabular-nums leading-none whitespace-nowrap origin-center ${
+              justScored ? "goal-pop" : ""
+            }`}
+          >
             {started ? score : <span className="text-muted text-base">{m.kickoff}</span>}
           </div>
           {pens && <div className="text-[10px] text-gold font-bold">{pens}</div>}

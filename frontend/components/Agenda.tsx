@@ -13,9 +13,11 @@ function gridCols(n: number): number {
 export default function Agenda({
   matches,
   onSelect,
+  goalIds,
 }: {
   matches: Match[];
   onSelect?: (m: Match) => void;
+  goalIds?: Set<string | number>;
 }) {
   const cols = gridCols(matches.length);
   const rows = matches.length <= 2 ? 1 : 2;
@@ -44,7 +46,12 @@ export default function Agenda({
           }}
         >
           {matches.map((m) => (
-            <MatchCard key={m.id} m={m} onSelect={onSelect} />
+            <MatchCard
+              key={m.id}
+              m={m}
+              onSelect={onSelect}
+              justScored={goalIds?.has(m.id)}
+            />
           ))}
         </div>
       )}

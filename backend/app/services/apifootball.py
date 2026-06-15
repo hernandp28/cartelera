@@ -366,10 +366,11 @@ class APIFootballClient:
                 if not grp:
                     continue
                 raw_label = grp[0].get("group") or ""
-                # Excluir tablas que no son grupos (ej. "Ranking of third-placed teams")
-                if not raw_label.lower().startswith("group "):
-                    continue
                 label = raw_label.replace("Group ", "").strip()
+                # Solo grupos reales "Group A".."Group L" (1 letra). Excluye
+                # "Group Stage", "Ranking of third-placed teams", etc.
+                if len(label) != 1 or not label.isalpha():
+                    continue
                 tables.append({
                     "group": label or "?",
                     "rows": [

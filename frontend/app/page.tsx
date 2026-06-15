@@ -7,6 +7,7 @@ import GroupsCarousel from "@/components/GroupsCarousel";
 import JueganManana from "@/components/JueganManana";
 import LineupModal from "@/components/LineupModal";
 import { fetchCartelera, shiftDate, todayAR } from "@/lib/api";
+import { playGoalSound, unlockAudio } from "@/lib/sound";
 import type { CarteleraResponse, MatchCard } from "@/lib/types";
 
 export default function Page() {
@@ -15,6 +16,8 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [selected, setSelected] = useState<MatchCard | null>(null);
+  const [goalIds, setGoalIds] = useState<Set<string | number>>(new Set());
+  const prevTotals = useRef<Record<string, number>>({});
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Refs para el chequeo de medianoche sin recrear timers
@@ -62,6 +65,42 @@ export default function Page() {
     return () => clearInterval(id);
   }, []);
 
+  // Detección de gol: si sube el marcador de algún partido entre refrescos,
+  // se anima el resultado y suena un sonido sutil.
+  useEffect(() => {
+    if (!data) return;
+    const prev = prevTotals.current;
+    const next: Record<string, number> = {};
+    const scored: (string | number)[] = [];
+    for (const m of data.agenda) {
+      const total = (m.home_score ?? 0) + (m.away_score ?? 0);
+      next[String(m.id)] = total;
+      if (String(m.id) in prev && total > prev[String(m.id)]) scored.push(m.id);
+    }
+    prevTotals.current = next;
+    if (scored.length > 0) {
+      setGoalIds(new Set(scored));
+      playGoalSound();
+      const t = setTimeout(() => setGoalIds(new Set()), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [data]);
+
+  // Desbloquea el audio en la primera interacción del usuario (kiosko/navegador)
+  useEffect(() => {
+    const unlock = () => {
+      unlockAudio();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
   // Escala la cartelera 1280x720 para llenar la ventana sin deformar
   useEffect(() => {
     const fit = () => {
@@ -106,7 +145,11 @@ export default function Page() {
             </div>
           ) : (
             <>
-              <Agenda matches={data?.agenda ?? []} onSelect={setSelected} />
+              <Agenda
+                matches={data?.agenda ?? []}
+                onSelect={setSelected}
+                goalIds={goalIds}
+              />
               <GroupsCarousel groups={data?.groups ?? []} />
               <JueganManana matches={data?.tomorrow ?? []} />
             </>
