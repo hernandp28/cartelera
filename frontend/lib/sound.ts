@@ -5,7 +5,33 @@
 
 let ctx: AudioContext | null = null;
 
-// Audio de gol (archivo MP3 en /public). Se reutiliza una sola instancia.
+// Audio de gol: se decodifica el MP3 a un AudioBuffer y se reproduce por el
+// mismo AudioContext del silbato (más confiable que <audio>, suena también con
+// la pestaña en segundo plano una vez desbloqueado el contexto).
+let goalBuffer: AudioBuffer | null = null;
+let goalBufferLoading: Promise<AudioBuffer | null> | null = null;
+
+function loadGoalBuffer(ac: AudioContext): Promise<AudioBuffer | null> {
+  if (goalBuffer) return Promise.resolve(goalBuffer);
+  if (!goalBufferLoading) {
+    goalBufferLoading = fetch("/goal.mp3")
+      .then((r) => r.arrayBuffer())
+      .then(
+        (data) =>
+          new Promise<AudioBuffer>((res, rej) =>
+            ac.decodeAudioData(data, res, rej)
+          )
+      )
+      .then((b) => {
+        goalBuffer = b;
+        return b;
+      })
+      .catch(() => null);
+  }
+  return goalBufferLoading;
+}
+
+// Fallback con <audio> por si la decodificación fallara en algún navegador.
 let goalAudio: HTMLAudioElement | null = null;
 function getGoalAudio(): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
@@ -31,20 +57,9 @@ function getCtx(): AudioContext | null {
 
 export function unlockAudio(): void {
   const ac = getCtx();
-  if (ac && ac.state === "suspended") ac.resume().catch(() => {});
-  // Desbloquea el <audio> del gol reproduciéndolo en silencio una vez
-  const a = getGoalAudio();
-  if (a) {
-    a.muted = true;
-    a.play()
-      .then(() => {
-        a.pause();
-        a.currentTime = 0;
-        a.muted = false;
-      })
-      .catch(() => {
-        a.muted = false;
-      });
+  if (ac) {
+    if (ac.state === "suspended") ac.resume().catch(() => {});
+    loadGoalBuffer(ac); // precarga/decodifica el MP3 del gol
   }
 }
 
@@ -106,15 +121,37 @@ export function playWhistle(): void {
   ns.stop(now + dur);
 }
 
-/** Festejo de gol: reproduce el MP3 de /public/goal.mp3 desde el inicio. */
+/** Festejo de gol: reproduce el MP3 vía Web Audio (suena aun en segundo plano).
+ *  Si la decodificación no estuviera lista, cae al elemento <audio>. */
 export function playGoalCrowd(): void {
+  const ac = getCtx();
+  if (!ac) {
+    fallbackHtmlAudio();
+    return;
+  }
+  if (ac.state === "suspended") ac.resume().catch(() => {});
+  loadGoalBuffer(ac).then((buf) => {
+    if (!buf) {
+      fallbackHtmlAudio();
+      return;
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const g = ac.createGain();
+    g.gain.value = 1.0;
+    src.connect(g);
+    g.connect(ac.destination);
+    src.start();
+  });
+}
+
+function fallbackHtmlAudio(): void {
   const a = getGoalAudio();
   if (!a) return;
   try {
-    a.muted = false;
     a.currentTime = 0;
     a.play().catch(() => {});
   } catch {
-    /* ignora errores de reproducción */
+    /* ignora */
   }
 }
