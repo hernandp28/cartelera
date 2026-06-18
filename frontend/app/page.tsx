@@ -7,7 +7,7 @@ import GroupsCarousel from "@/components/GroupsCarousel";
 import JueganManana from "@/components/JueganManana";
 import LineupModal from "@/components/LineupModal";
 import { fetchCartelera, shiftDate, todayAR } from "@/lib/api";
-import { playGoalSound, unlockAudio } from "@/lib/sound";
+import { playGoalCrowd, playWhistle, unlockAudio } from "@/lib/sound";
 import type { CarteleraResponse, MatchCard } from "@/lib/types";
 
 export default function Page() {
@@ -18,6 +18,7 @@ export default function Page() {
   const [selected, setSelected] = useState<MatchCard | null>(null);
   const [goalIds, setGoalIds] = useState<Set<string | number>>(new Set());
   const prevTotals = useRef<Record<string, number>>({});
+  const prevStatus = useRef<Record<string, string>>({});
   const stageRef = useRef<HTMLDivElement>(null);
 
   // Refs para el chequeo de medianoche sin recrear timers
@@ -65,23 +66,42 @@ export default function Page() {
     return () => clearInterval(id);
   }, []);
 
-  // Detección de gol: si sube el marcador de algún partido entre refrescos,
-  // se anima el resultado y suena un sonido sutil.
+  // Detección entre refrescos:
+  //  • Gol (sube el marcador)        → festejo de tribuna + animación 5s
+  //  • Cambio de fase del partido    → silbato de árbitro
+  //      NS→LIVE (inicio), LIVE→HT (fin 1T), HT→LIVE (inicio 2T),
+  //      LIVE/HT→FT/AET/PEN (final)
   useEffect(() => {
     if (!data) return;
-    const prev = prevTotals.current;
-    const next: Record<string, number> = {};
+    const prevT = prevTotals.current;
+    const prevS = prevStatus.current;
+    const nextT: Record<string, number> = {};
+    const nextS: Record<string, string> = {};
     const scored: (string | number)[] = [];
+    let whistle = false;
+
+    const isPhaseChange = (p: string, c: string) =>
+      (p === "NS" && c === "LIVE") ||
+      (p === "LIVE" && c === "HT") ||
+      (p === "HT" && c === "LIVE") ||
+      ((p === "LIVE" || p === "HT") && ["FT", "AET", "PEN"].includes(c));
+
     for (const m of data.agenda) {
+      const id = String(m.id);
       const total = (m.home_score ?? 0) + (m.away_score ?? 0);
-      next[String(m.id)] = total;
-      if (String(m.id) in prev && total > prev[String(m.id)]) scored.push(m.id);
+      nextT[id] = total;
+      nextS[id] = m.status;
+      if (id in prevT && total > prevT[id]) scored.push(m.id);
+      if (id in prevS && isPhaseChange(prevS[id], m.status)) whistle = true;
     }
-    prevTotals.current = next;
+    prevTotals.current = nextT;
+    prevStatus.current = nextS;
+
+    if (whistle) playWhistle();
     if (scored.length > 0) {
       setGoalIds(new Set(scored));
-      playGoalSound();
-      const t = setTimeout(() => setGoalIds(new Set()), 2500);
+      playGoalCrowd();
+      const t = setTimeout(() => setGoalIds(new Set()), 5200); // dura la anim.
       return () => clearTimeout(t);
     }
   }, [data]);

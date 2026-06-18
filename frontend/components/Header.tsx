@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { formatDMY, formatLongDate } from "@/lib/api";
+import { playGoalCrowd } from "@/lib/sound";
 
 interface Props {
   date: string;
@@ -98,8 +99,14 @@ export default function Header({
 
       {/* Derecha: logo */}
       <div className="w-[300px] flex items-center justify-end gap-3">
-        {/* Logo oficial incluido en la raíz del proyecto */}
-        <img src="/Logo.svg" alt="Mundial 2026" className="h-12 w-auto" />
+        {/* Logo oficial — al clickear reproduce el festejo de gol */}
+        <img
+          src="/Logo.svg"
+          alt="Mundial 2026"
+          onClick={() => playGoalCrowd()}
+          title="¡Goool!"
+          className="h-12 w-auto cursor-pointer select-none active:scale-95 transition"
+        />
       </div>
     </header>
   );
