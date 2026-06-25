@@ -63,6 +63,24 @@ def _to_int(v: Any) -> int | None:
         return None
 
 
+def _round_es(round_name: str) -> str:
+    """Traduce la ronda de eliminatorias al castellano (corto, para la tarjeta)."""
+    r = (round_name or "").lower()
+    if "round of 32" in r:
+        return "16avos"
+    if "round of 16" in r:
+        return "Octavos"
+    if "quarter" in r:
+        return "Cuartos"
+    if "semi" in r:
+        return "Semifinal"
+    if "3rd" in r or "third" in r:
+        return "3er puesto"
+    if "final" in r:
+        return "Final"
+    return round_name or "Mundial"
+
+
 _YOUTH_RE = re.compile(r"\bU\d{1,2}\b", re.IGNORECASE)
 
 
@@ -137,11 +155,14 @@ class APIFootballClient:
         league_name = lg.get("name") or ""
         round_name = lg.get("round") or ""
         is_friendly = "friend" in league_name.lower()
-        stage = "Amistoso" if is_friendly else (round_name or league_name)
-        # Grupo: de "Group Stage - 1" no sale el grupo; eso viene de standings.
-        group = None
-        if round_name.lower().startswith("group ") and "-" not in round_name:
-            group = round_name.split(" ")[-1]
+        is_group_stage = round_name.lower().startswith("group stage")
+        if is_friendly:
+            stage = "Amistoso"
+        elif is_group_stage:
+            stage = "Fase de grupos"
+        else:
+            stage = _round_es(round_name)  # eliminatorias: 16avos, Octavos...
+        group = None  # la letra se asigna desde standings (solo fase de grupos)
 
         def ref(t: dict) -> dict:
             return {
@@ -161,6 +182,7 @@ class APIFootballClient:
             "league_id": lg.get("id"),
             "stage": stage,
             "competition": league_name,
+            "is_group_stage": is_group_stage,
             "group": group,
             "venue": (f.get("venue", {}) or {}).get("name"),
             "home": ref(home),
@@ -252,7 +274,12 @@ class APIFootballClient:
         except APIFootballError:
             gmap = {}
         for m in out:
-            if m.get("league_id") == self.league_id and not m.get("group"):
+            # Solo a los partidos de FASE DE GRUPOS del Mundial (no eliminatorias)
+            if (
+                m.get("league_id") == self.league_id
+                and m.get("is_group_stage")
+                and not m.get("group")
+            ):
                 m["group"] = gmap.get(m["home"]["id"]) or gmap.get(m["away"]["id"])
         return out
 

@@ -69,14 +69,15 @@ export default function GroupsCarousel({ groups }: { groups: GroupTable[] }) {
   for (let i = 0; i < groups.length; i += 6) pages.push(groups.slice(i, i + 6));
 
   const [page, setPage] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    if (pages.length <= 1) return;
+    if (pages.length <= 1 || paused) return;
     const id = setInterval(() => {
       setPage((p) => (p + 1) % pages.length);
     }, 10000); // 10 segundos por página
     return () => clearInterval(id);
-  }, [pages.length]);
+  }, [pages.length, paused]);
 
   const current = pages[page] || [];
 
@@ -86,15 +87,41 @@ export default function GroupsCarousel({ groups }: { groups: GroupTable[] }) {
         <h2 className="text-sm font-bold tracking-widest text-muted uppercase">
           Tabla de posiciones por grupo
         </h2>
-        <div className="flex gap-1.5 items-center">
-          {pages.map((_, i) => (
-            <span
-              key={i}
-              className={`w-2 h-2 rounded-full transition ${
-                i === page ? "bg-brand" : "bg-line"
-              }`}
-            />
-          ))}
+        <div className="flex gap-2 items-center">
+          {/* puntos de página */}
+          <div className="flex gap-1.5 items-center mr-1">
+            {pages.map((_, i) => (
+              <span
+                key={i}
+                className={`w-2 h-2 rounded-full transition ${
+                  i === page ? "bg-brand" : "bg-line"
+                }`}
+              />
+            ))}
+          </div>
+          {/* controles del carrusel: pausa y play */}
+          <button
+            onClick={() => setPaused(true)}
+            title="Pausar carrusel"
+            className={`w-6 h-6 rounded-md border flex items-center justify-center text-[11px] transition ${
+              paused
+                ? "bg-panel2 border-line text-muted"
+                : "bg-brand/90 border-brand text-white"
+            }`}
+          >
+            ❚❚
+          </button>
+          <button
+            onClick={() => setPaused(false)}
+            title="Reanudar carrusel"
+            className={`w-6 h-6 rounded-md border flex items-center justify-center text-[11px] transition ${
+              !paused
+                ? "bg-brand/90 border-brand text-white"
+                : "bg-panel2 border-line text-muted"
+            }`}
+          >
+            ▶
+          </button>
         </div>
       </div>
       <div
